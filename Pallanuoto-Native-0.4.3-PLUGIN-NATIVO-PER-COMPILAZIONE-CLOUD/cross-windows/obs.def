@@ -1,0 +1,8 @@
+LIBRARY obs.dll
+EXPORTS
+bfree
+blog
+obs_module_get_config_path
+obs_module_load_locale
+text_lookup_destroy
+text_lookup_getstr

@@ -1,0 +1,7 @@
+LIBRARY obs-frontend-api.dll
+EXPORTS
+obs_frontend_add_dock_by_id
+obs_frontend_add_event_callback
+obs_frontend_get_main_window
+obs_frontend_remove_dock
+obs_frontend_remove_event_callback
