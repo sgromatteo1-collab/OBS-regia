@@ -5,8 +5,8 @@ from pathlib import Path
 source = Path("src/plugin.cpp")
 data = source.read_text(encoding="utf-8")
 changes = [
-    ("for(const auto &p:players){", "for(const auto p:players){"),
-    ('for(const auto &v:t["players"].toArray()){', 'for(const auto v:t["players"].toArray()){'),
+    ("for(const auto &p:players){", "for(const QJsonValue p:players){"),
+    ('for(const auto &v:t["players"].toArray()){', 'for(const QJsonValue v:t["players"].toArray()){'),
 ]
 for old, new in changes:
     if data.count(old) != 1:
