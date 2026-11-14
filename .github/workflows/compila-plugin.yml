@@ -1,0 +1,87 @@
+name: Compila Pallanuoto Native OBS 0.4.3
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifica-sorgenti:
+    name: Verifica integrità sorgenti 0.4.3
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Estrai sorgenti originali
+        run: python3 scripts/unpack-source.py
+      - name: Verifica modifiche e versione
+        run: python3 scripts/check-sorgenti.py
+
+  windows:
+    name: Plugin nativo Windows x64
+    needs: verifica-sorgenti
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Estrai sorgenti e controlla checksum
+        shell: pwsh
+        run: |
+          python scripts/unpack-source.py
+          python scripts/check-sorgenti.py
+      - name: Recupera la toolchain ufficiale OBS
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/obsproject/obs-plugintemplate.git _obs_template
+          Copy-Item -Path "_obs_template/cmake" -Destination "cmake" -Recurse
+      - name: Configura OBS SDK e Qt
+        run: cmake --preset windows-x64
+      - name: Compila DLL nativa
+        run: cmake --build --preset windows-x64 --config RelWithDebInfo --parallel 2
+      - name: Installa i file nello staging
+        run: cmake --install build_x64 --config RelWithDebInfo --prefix "${{ github.workspace }}/stage"
+      - name: Prepara installazione a doppio clic
+        shell: pwsh
+        run: ./scripts/pack-windows.ps1
+      - name: Pubblica installer Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pallanuoto-Native-0.4.3-Windows-x64
+          path: dist/Pallanuoto-Native-0.4.3-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  mac:
+    name: Plugin nativo Mac universale
+    needs: verifica-sorgenti
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifica compilatore Mac
+        run: xcodebuild -version
+      - name: Estrai sorgenti e controlla checksum
+        run: |
+          python3 scripts/unpack-source.py
+          python3 scripts/check-sorgenti.py
+      - name: Recupera la toolchain ufficiale OBS
+        run: |
+          git clone --depth 1 https://github.com/obsproject/obs-plugintemplate.git _obs_template
+          cp -R _obs_template/cmake cmake
+      - name: Configura OBS SDK e Qt
+        run: cmake --preset macos
+      - name: Compila plugin nativo Universal
+        run: cmake --build --preset macos --config RelWithDebInfo --parallel 2
+      - name: Installa i file nello staging
+        run: cmake --install build_macos --config RelWithDebInfo --prefix "${{ github.workspace }}/stage"
+      - name: Prepara installazione a doppio clic
+        run: bash ./scripts/pack-macos.sh
+      - name: Pubblica installer Mac
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pallanuoto-Native-0.4.3-Mac-Universal
+          path: dist/Pallanuoto-Native-0.4.3-Mac-Universal.zip
+          if-no-files-found: error
+          retention-days: 30
